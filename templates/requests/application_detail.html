@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Заявка #{{ application.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Заявка #{{ application.id }}</h4>
+                <span class="status-badge status-{{ application.status }}">
+                    {{ application.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <p><strong>Категория:</strong> {{ application.category.name }}</p>
+                <p><strong>Студент:</strong> {{ application.user.get_full_name|default:application.user.username }}</p>
+                <p><strong>Комната:</strong> {{ application.user.profile.room_number|default:"Не указана" }}</p>
+                <p><strong>Создана:</strong> {{ application.created_at|date:"d.m.Y H:i" }}</p>
+                {% if application.assigned_to %}
+                <p><strong>Мастер:</strong> {{ application.assigned_to.get_full_name|default:application.assigned_to.username }}</p>
+                {% endif %}
+
+                <hr>
+                <h5>Описание проблемы:</h5>
+                <p>{{ application.description|linebreaks }}</p>
+
+                {% if attachments %}
+                <h5>Фото:</h5>
+                <div class="row">
+                    {% for attachment in attachments %}
+                    <div class="col-md-4 mb-3">
+                        <img src="{{ attachment.file.url }}" class="img-fluid rounded" alt="Фото проблемы">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📜 История статусов</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for history in status_history %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <strong>{{ history.get_status_display }}</strong>
+                        <span class="text-muted float-end">{{ history.changed_at|date:"d.m.Y H:i" }}</span>
+                        <div class="small text-muted">Изменил: {{ history.changed_by.get_full_name|default:history.changed_by.username }}</div>
+                        {% if history.comment %}
+                        <div class="mt-1">{{ history.comment }}</div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">История статусов пуста</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        {% if status_form %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🔧 Изменить статус</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="change_status" value="1">
+                    <div class="mb-3">
+                        {{ status_form.status.label_tag }}
+                        {{ status_form.status }}
+                    </div>
+                    <div class="mb-3">
+                        {{ status_form.comment.label_tag }}
+                        {{ status_form.comment }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.profile.role == 'admin' and application.status != 'completed' %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">👨‍🔧 Назначить мастера</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'assign_master' application.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="master_id" class="form-label">Выберите мастера</label>
+                        <select name="master_id" class="form-select" required>
+                            <option value="">Выберите...</option>
+                            {% for master in masters %}
+                            <option value="{{ master.id }}">{{ master.get_full_name|default:master.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Назначить</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

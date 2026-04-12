@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Создать заявку{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">📝 Создание заявки на ремонт</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Категория неисправности *</label>
+                        {{ form.category }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание проблемы *</label>
+                        {{ form.description }}
+                        <div class="form-text">Опишите проблему подробно: что сломано, как давно, что было до этого?</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="photos" class="form-label">📸 Фото проблемы</label>
+                        <input type="file" name="photos" multiple class="form-control" accept="image/*">
+                        <div class="form-text">Можно прикрепить несколько фото. Это поможет мастеру подготовиться.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">📨 Отправить заявку</button>
+                        <a href="{% url 'home' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
