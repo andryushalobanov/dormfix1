@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Заполнение профиля{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📝 Заполните информацию о себе</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>❗ Важно:</strong> Перед созданием заявок необходимо заполнить информацию о себе.
+                    Это поможет мастеру связаться с вами и найти вашу комнату.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Полное имя *</label>
+                        {{ form.full_name }}
+                        <div class="form-text">Например: Иванов Иван Иванович</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="room_number" class="form-label">Номер комнаты *</label>
+                        {{ form.room_number }}
+                        <div class="form-text">Номер вашей комнаты в общежитии</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Номер телефона *</label>
+                        {{ form.phone }}
+                        <div class="form-text">Для связи с мастером</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">💾 Сохранить информацию</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

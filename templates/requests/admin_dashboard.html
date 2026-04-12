@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель администратора{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📊 Панель администратора</h2>
+    <div>
+        <span class="badge bg-primary">Всего заявок: {{ applications.paginator.count }}</span>
+    </div>
+</div>
+
+{% if applications %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Студент</th>
+                <th>Категория</th>
+                <th>Описание</th>
+                <th>Статус</th>
+                <th>Мастер</th>
+                <th>Создана</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in applications %}
+            <tr>
+                <td>#{{ app.id }}</td>
+                <td>{{ app.user.get_full_name|default:app.user.username }}</td>
+                <td>{{ app.category.name|default:"-" }}</td>
+                <td>{{ app.description|truncatewords:10 }}</td>
+                <td>
+                    <span class="status-badge status-{{ app.status }}">
+                        {{ app.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ app.assigned_to.get_full_name|default:"Не назначен" }}</td>
+                <td>{{ app.created_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <a href="{% url 'application_detail' app.id %}" class="btn btn-sm btn-outline-primary">Просмотр</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Пагинация -->
+{% if applications.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if applications.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ applications.previous_page_number }}">«</a>
+        </li>
+        {% endif %}
+        
+        {% for num in applications.paginator.page_range %}
+        <li class="page-item {% if applications.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        
+        {% if applications.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ applications.next_page_number }}">»</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    Пока нет заявок в системе.
+</div>
+{% endif %}
+{% endblock %}

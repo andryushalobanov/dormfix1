@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои заявки{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 Мои заявки</h2>
+    {% if user.profile.is_profile_complete %}
+        <a href="{% url 'create_application' %}" class="btn btn-primary">➕ Создать заявку</a>
+    {% else %}
+        <a href="{% url 'complete_profile' %}" class="btn btn-warning">⚠️ Заполнить профиль</a>
+    {% endif %}
+</div>
+
+{% if not user.profile.is_profile_complete %}
+<div class="alert alert-warning">
+    <strong>Внимание!</strong> Для создания заявок необходимо заполнить информацию о себе:
+    <ul class="mt-2 mb-0">
+        {% if not user.profile.full_name %}<li>Полное имя</li>{% endif %}
+        {% if not user.profile.room_number %}<li>Номер комнаты</li>{% endif %}
+        {% if not user.profile.phone %}<li>Номер телефона</li>{% endif %}
+    </ul>
+    <a href="{% url 'complete_profile' %}" class="btn btn-warning btn-sm mt-2">Заполнить профиль</a>
+</div>
+{% endif %}
+
+<!-- Остальной код без изменений -->
+{% if applications %}
+<!-- ... -->
+{% else %}
+<div class="alert alert-info">
+    У вас пока нет заявок.
+    {% if user.profile.is_profile_complete %}
+        Создайте первую заявку!
+    {% else %}
+        Сначала заполните профиль, чтобы создать заявку.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

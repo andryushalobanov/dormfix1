@@ -4,37 +4,48 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from .models import Application, Category, Attachment, StatusHistory, Notification
 from .forms import ApplicationForm, ApplicationStatusForm
+from django.contrib.auth.models import User
 
 
-def is_student(user):
-    return user.profile.role == 'student'
+def get_user_role(user):
+    """Безопасное получение роли пользователя"""
+    if hasattr(user, 'profile'):
+        return user.profile.role
+    return 'student'
 
 
 def is_maintenance(user):
-    return user.profile.role == 'maintenance'
+    return get_user_role(user) == 'maintenance'
 
 
 def is_admin(user):
-    return user.profile.role == 'admin' or user.is_superuser
+    return get_user_role(user) == 'admin' or user.is_superuser
+
+
+def is_student(user):
+    return get_user_role(user) == 'student'
+
+
+def check_profile_complete(user):
+    """Проверяет, заполнен ли профиль пользователя"""
+    if is_admin(user) or is_maintenance(user):
+        return True  # Админы и мастера не обязаны заполнять профиль
+    return hasattr(user, 'profile') and user.profile.is_profile_complete()
 
 
 @login_required
 def home(request):
     """Главная страница - дашборд в зависимости от роли"""
     if is_maintenance(request.user):
-        # Мастер видит назначенные заявки
         applications = Application.objects.filter(assigned_to=request.user)
         template = 'requests/maintenance_dashboard.html'
     elif is_admin(request.user):
-        # Админ видит все заявки
         applications = Application.objects.all()
         template = 'requests/admin_dashboard.html'
     else:
-        # Студент видит свои заявки
         applications = Application.objects.filter(user=request.user)
         template = 'requests/student_dashboard.html'
 
-    # Пагинация
     paginator = Paginator(applications, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -45,7 +56,12 @@ def home(request):
 @login_required
 @user_passes_test(is_student)
 def create_application(request):
-    """Создание заявки - по твоему wireframe"""
+    """Создание заявки с проверкой заполненности профиля"""
+    # Проверяем, заполнен ли профиль
+    if not check_profile_complete(request.user):
+        messages.warning(request, 'Пожалуйста, сначала заполните информацию о себе!')
+        return redirect('complete_profile')
+
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
@@ -66,7 +82,6 @@ def create_application(request):
                 comment='Заявка создана'
             )
 
-            # Уведомляем админов (упрощенно)
             messages.success(request, f'Заявка #{application.id} успешно создана!')
             return redirect('application_detail', application_id=application.id)
     else:
@@ -81,10 +96,10 @@ def create_application(request):
 
 @login_required
 def application_detail(request, application_id):
-    """Детали заявки - просмотр статуса, истории, чат с мастером"""
+    """Детали заявки - просмотр статуса, истории"""
     application = get_object_or_404(Application, id=application_id)
 
-    # Проверка прав доступа (по твоей матрице из ПР03)
+    # Проверка прав доступа
     if not (request.user == application.user or is_admin(request.user) or
             request.user == application.assigned_to):
         messages.error(request, 'У вас нет доступа к этой заявке')
@@ -92,21 +107,23 @@ def application_detail(request, application_id):
 
     status_history = application.status_history.all()
     attachments = application.attachments.all()
-    notifications = application.notifications.filter(user=request.user)
 
     # Отмечаем уведомления прочитанными
+    notifications = application.notifications.filter(user=request.user)
     notifications.update(is_read=True)
 
-    # Форма изменения статуса (для мастера и админа)
-    status_form = None
-    if is_maintenance(request.user) or is_admin(request.user):
-        if request.method == 'POST' and 'change_status' in request.POST:
-            status_form = ApplicationStatusForm(request.POST)
-            if status_form.is_valid():
-                new_status = status_form.cleaned_data['status']
-                comment = status_form.cleaned_data['comment']
+    # Получаем список мастеров для назначения (только для админа)
+    masters = []
+    if is_admin(request.user):
+        masters = User.objects.filter(profile__role='maintenance')
 
-                # Обновляем статус
+    # Обработка изменения статуса
+    if request.method == 'POST':
+        if 'change_status' in request.POST and (is_maintenance(request.user) or is_admin(request.user)):
+            new_status = request.POST.get('status')
+            comment = request.POST.get('comment', '')
+
+            if new_status in dict(Application.STATUS_CHOICES):
                 application.status = new_status
                 application.save()
 
@@ -128,45 +145,45 @@ def application_detail(request, application_id):
 
                 messages.success(request, 'Статус заявки обновлен')
                 return redirect('application_detail', application_id=application.id)
-        else:
-            status_form = ApplicationStatusForm(initial={'status': application.status})
 
     return render(request, 'requests/application_detail.html', {
         'application': application,
         'status_history': status_history,
         'attachments': attachments,
-        'status_form': status_form,
+        'masters': masters,
     })
 
 
 @login_required
 @user_passes_test(is_admin)
 def assign_master(request, application_id):
-    """Назначение мастера на заявку - из ПР02 сценарий"""
+    """Назначение мастера на заявку"""
     application = get_object_or_404(Application, id=application_id)
 
     if request.method == 'POST':
         master_id = request.POST.get('master_id')
-        from django.contrib.auth.models import User
-        master = User.objects.get(id=master_id, profile__role='maintenance')
+        if master_id:
+            try:
+                master = User.objects.get(id=master_id, profile__role='maintenance')
+                application.assigned_to = master
+                application.save()
 
-        application.assigned_to = master
-        application.save()
+                StatusHistory.objects.create(
+                    application=application,
+                    status=application.status,
+                    changed_by=request.user,
+                    comment=f'Назначен мастер: {master.get_full_name() or master.username}'
+                )
 
-        StatusHistory.objects.create(
-            application=application,
-            status=application.status,
-            changed_by=request.user,
-            comment=f'Назначен мастер: {master.get_full_name()}'
-        )
+                Notification.objects.create(
+                    user=master,
+                    application=application,
+                    title='Новая заявка назначена',
+                    content=f'Вам назначена заявка #{application.id}: {application.description[:100]}'
+                )
 
-        Notification.objects.create(
-            user=master,
-            application=application,
-            title='Новая заявка назначена',
-            content=f'Вам назначена заявка #{application.id}: {application.description[:100]}'
-        )
-
-        messages.success(request, f'Мастер назначен на заявку #{application.id}')
+                messages.success(request, f'Мастер назначен на заявку #{application.id}')
+            except User.DoesNotExist:
+                messages.error(request, 'Мастер не найден')
 
     return redirect('application_detail', application_id=application.id)
