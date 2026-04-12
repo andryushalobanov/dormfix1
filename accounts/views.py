@@ -1,16 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
 from django.contrib import messages
 from .models import UserProfile
-from .forms import UserProfileForm
+from .forms import CustomUserCreationForm, UserProfileForm
 from django.contrib.auth.models import User
 
 
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             # Создаем профиль для пользователя
@@ -20,9 +19,10 @@ def register_view(request):
             )
             login(request, user)
             messages.success(request, 'Регистрация успешна! Пожалуйста, заполните информацию о себе.')
-            return redirect('complete_profile')  # Перенаправляем на заполнение профиля
+            return redirect('complete_profile')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
+
     return render(request, 'registration/register.html', {'form': form})
 
 
@@ -76,10 +76,14 @@ def complete_profile_view(request):
         if form.is_valid():
             profile = form.save(commit=False)
             # Обновляем полное имя в модели User
-            request.user.first_name = form.cleaned_data['full_name'].split()[0] if form.cleaned_data[
-                'full_name'] else ''
-            request.user.last_name = ' '.join(form.cleaned_data['full_name'].split()[1:]) if len(
-                form.cleaned_data['full_name'].split()) > 1 else ''
+            full_name = form.cleaned_data['full_name']
+            name_parts = full_name.split()
+            if len(name_parts) >= 2:
+                request.user.first_name = name_parts[0]
+                request.user.last_name = ' '.join(name_parts[1:])
+            else:
+                request.user.first_name = full_name
+                request.user.last_name = ''
             request.user.save()
             profile.save()
             messages.success(request, 'Профиль успешно заполнен! Теперь вы можете создавать заявки.')

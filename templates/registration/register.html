@@ -6,14 +6,57 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header bg-primary text-white">
                 <h4 class="mb-0">📝 Регистрация в DormFix</h4>
             </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            {{ form.username.label }}
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {{ form.username.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label">
+                            {{ form.password1.label }}
+                        </label>
+                        {{ form.password1 }}
+                        <div class="form-text text-muted small">
+                            Пароль должен содержать минимум 8 символов и не быть слишком простым.
+                        </div>
+                        {% if form.password1.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {{ form.password1.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label">
+                            {{ form.password2.label }}
+                        </label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {{ form.password2.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Зарегистрироваться
+                        </button>
+                    </div>
                 </form>
                 <hr>
                 <p class="text-center mb-0">
