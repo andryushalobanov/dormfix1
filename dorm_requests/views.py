@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from .models import Application, Category, Attachment, StatusHistory, Notification
 from .forms import ApplicationForm, ApplicationStatusForm
 from django.contrib.auth.models import User
+from .crm_integration import create_crm_lead_for_application
 
 
 def get_user_role(user):
@@ -82,7 +83,23 @@ def create_application(request):
                 comment='Заявка создана'
             )
 
-            messages.success(request, f'Заявка #{application.id} успешно создана!')
+            # Отправляем заявку в Bitrix24 CRM
+            crm_result = create_crm_lead_for_application(application)
+
+            if crm_result.success:
+                application.crm_lead_id = crm_result.crm_id
+                application.save(update_fields=['crm_lead_id'])
+
+                messages.success(
+                    request,
+                    f'Заявка #{application.id} успешно создана и отправлена в CRM!'
+                )
+            else:
+                messages.warning(
+                    request,
+                    f'Заявка #{application.id} создана, но не отправлена в CRM: {crm_result.error}'
+                )
+
             return redirect('application_detail', application_id=application.id)
     else:
         form = ApplicationForm()

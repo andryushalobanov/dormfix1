@@ -33,6 +33,12 @@ class Application(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='assigned_applications', verbose_name="Мастер",
                                     limit_choices_to={'groups__name': 'maintenance'})
+    crm_lead_id = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        verbose_name="ID лида в Bitrix24"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")

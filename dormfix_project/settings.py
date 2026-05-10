@@ -12,9 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -40,7 +41,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'accounts',
-    'requests',
+    'dorm_requests.apps.DormRequestsConfig',
     'dashboard',
 ]
 
@@ -132,3 +133,18 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Bitrix24 CRM integration
+BITRIX24_WEBHOOK_BASE_URL = os.getenv('BITRIX24_WEBHOOK_BASE_URL', '')
+
+BITRIX24_FIELD_APPLICATION_ID = os.getenv('BITRIX24_FIELD_APPLICATION_ID', '')
+BITRIX24_FIELD_ROOM_NUMBER = os.getenv('BITRIX24_FIELD_ROOM_NUMBER', '')
+BITRIX24_FIELD_CATEGORY = os.getenv('BITRIX24_FIELD_CATEGORY', '')
+BITRIX24_FIELD_STATUS = os.getenv('BITRIX24_FIELD_STATUS', '')
+BITRIX24_FIELD_ASSIGNED_MASTER = os.getenv('BITRIX24_FIELD_ASSIGNED_MASTER', '')
+BITRIX24_FIELD_CREATED_AT = os.getenv('BITRIX24_FIELD_CREATED_AT', '')
+BITRIX24_FIELD_SOURCE_SYSTEM = os.getenv('BITRIX24_FIELD_SOURCE_SYSTEM', '')
+
+BITRIX24_CATEGORY_ENUM_MAP = os.getenv('BITRIX24_CATEGORY_ENUM_MAP', '{}')
+BITRIX24_STATUS_ENUM_MAP = os.getenv('BITRIX24_STATUS_ENUM_MAP', '{}')
+BITRIX24_MASTER_USER_MAP = os.getenv('BITRIX24_MASTER_USER_MAP', '{}')

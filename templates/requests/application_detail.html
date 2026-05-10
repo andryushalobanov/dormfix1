@@ -26,6 +26,10 @@
 
                     <dt class="col-sm-3">Создана:</dt>
                     <dd class="col-sm-9">{{ application.created_at|date:"d.m.Y H:i" }}</dd>
+                    {% if application.crm_lead_id %}
+                    <dt class="col-sm-3">CRM Lead ID:</dt>
+                    <dd class="col-sm-9">{{ application.crm_lead_id }}</dd>
+                    {% endif %}
 
                     {% if application.assigned_to %}
                     <dt class="col-sm-3">Мастер:</dt>
